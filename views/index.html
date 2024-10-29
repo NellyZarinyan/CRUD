@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #eef2f3;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            color: #4a4a4a;
+        }
+
+        #task-form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #task-title {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #4a90e2;
+            border-radius: 5px;
+            font-size: 1em;
+            margin-right: 10px;
+            transition: border-color 0.3s;
+        }
+
+        #task-title:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            padding: 15px 20px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        #task-list {
+            list-style-type: none;
+            padding: 0;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #task-list li {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between; /* Align items in a row */
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        #task-list li:hover {
+            transform: scale(1.02);
+        }
+
+        #task-list li button {
+            margin-left: 10px; /* Space between buttons */
+            flex-shrink: 0; /* Prevent buttons from shrinking */
+        }
+
+        #task-list li button {
+            background-color: #d9534f; /* Red for delete */
+        }
+
+        #task-list li button:hover {
+            background-color: #c9302c; /* Darker red on hover */
+        }
+
+        #task-list li button.edit {
+            background-color: #5bc0de; /* Light blue for edit */
+        }
+
+        #task-list li button.edit:hover {
+            background-color: #31b0d5; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body>
+    <h1>To-Do App</h1>
+    <form id="task-form">
+        <input type="text" id="task-title" placeholder="Enter a new task" required>
+        <button type="submit">Add Task</button>
+    </form>
+    <ul id="task-list"></ul>
+
+    <script>
+        const form = document.getElementById('task-form');
+        const taskList = document.getElementById('task-list');
+
+        // Load tasks on page load
+        async function loadTasks() {
+            const response = await fetch('/api/tasks');
+            const tasks = await response.json();
+            tasks.forEach(task => {
+                displayTask(task);
+            });
+        }
+
+        // Display a task in the list
+        function displayTask(task) {
+            const li = document.createElement('li');
+            li.textContent = task.title;
+
+            // Edit button
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Edit';
+            editButton.classList.add('edit');
+            editButton.onclick = () => editTask(task._id, task.title);
+            li.appendChild(editButton);
+
+            // Delete button
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => deleteTask(task._id);
+            li.appendChild(deleteButton);
+
+            taskList.appendChild(li);
+        }
+
+        // Handle task creation
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('task-title').value;
+
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title })
+            });
+
+            const newTask = await response.json();
+            displayTask(newTask);
+            form.reset();
+        });
+
+        // Handle task deletion
+        async function deleteTask(id) {
+            await fetch(`/api/tasks/${id}`, {
+                method: 'DELETE'
+            });
+            document.location.reload(); // Reload to reflect changes
+        }
+
+        // Handle task editing
+        function editTask(id, currentTitle) {
+            const newTitle = prompt("Edit task title:", currentTitle);
+            if (newTitle) {
+                fetch(`/api/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title: newTitle })
+                }).then(() => {
+                    document.location.reload(); // Reload to reflect changes
+                });
+            }
+        }
+
+        // Load tasks when the page is loaded
+        window.onload = loadTasks;
+    </script>
+</body>
+</html>
